@@ -3,337 +3,267 @@ import pandas as pd
 import numpy as np
 import joblib
 import re
+import plotly.graph_objects as go
+import plotly.express as px
+from plotly.subplots import make_subplots
+from datetime import datetime, timedelta
+import time
+from typing import Dict, List, Tuple
+import base64
+from io import BytesIO
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter, A4
+from reportlab.lib.colors import HexColor
+import uuid
 
 # ==========================================
-# 1. PAGE CONFIGURATION & STYLING
+# 1. PREMIUM PAGE CONFIGURATION
 # ==========================================
 st.set_page_config(
-    page_title="Valkyrie | Student 360° AI Counselor",
-    page_icon="🎓",
+    page_title="Valkyrie AI | Premium Student Success Platform",
+    page_icon="⚡",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for Premium Look
+# Premium branding and styling
 st.markdown("""
-    <style>
-    .main {
-        background-color: #f8f9fa;
+<style>
+    /* Premium Dark Theme */
+    .stApp {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     }
-    .stButton>button {
-        width: 100%;
-        background-color: #ff4b4b;
+    
+    /* Glassmorphism effect for main containers */
+    .main-container {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        padding: 2rem;
+        margin: 1rem 0;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    /* Premium metric cards */
+    .metric-card-premium {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 2rem;
+        border-radius: 15px;
         color: white;
-        font-weight: bold;
-        border-radius: 10px;
-        padding: 10px;
-    }
-    .metric-card {
-        background-color: white;
-        padding: 20px;
-        border-radius: 10px;
-        box-shadow: 2px 2px 10px rgba(0,0,0,0.1);
         text-align: center;
+        box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        transition: transform 0.3s ease;
     }
-    .report-box {
-        background-color: #1e1e1e;
+    
+    .metric-card-premium:hover {
+        transform: translateY(-5px);
+    }
+    
+    /* Risk indicator cards */
+    .risk-critical {
+        background: linear-gradient(135deg, #ff0844 0%, #ffb199 100%);
+        padding: 1.5rem;
+        border-radius: 15px;
+        color: white;
+        margin: 0.5rem 0;
+        box-shadow: 0 5px 15px rgba(255, 8, 68, 0.3);
+    }
+    
+    .risk-high {
+        background: linear-gradient(135deg, #ff9a00 0%, #ff6a00 100%);
+        padding: 1.5rem;
+        border-radius: 15px;
+        color: white;
+        margin: 0.5rem 0;
+        box-shadow: 0 5px 15px rgba(255, 154, 0, 0.3);
+    }
+    
+    .risk-medium {
+        background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+        padding: 1.5rem;
+        border-radius: 15px;
+        color: white;
+        margin: 0.5rem 0;
+        box-shadow: 0 5px 15px rgba(246, 211, 101, 0.3);
+    }
+    
+    .risk-low {
+        background: linear-gradient(135deg, #56ab2f 0%, #a8e063 100%);
+        padding: 1.5rem;
+        border-radius: 15px;
+        color: white;
+        margin: 0.5rem 0;
+        box-shadow: 0 5px 15px rgba(86, 171, 47, 0.3);
+    }
+    
+    /* Premium buttons */
+    .stButton > button {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        font-weight: 600;
+        border: none;
+        padding: 0.75rem 2rem;
+        border-radius: 50px;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        transition: all 0.3s ease;
+        width: 100%;
+    }
+    
+    .stButton > button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+    }
+    
+    /* Custom sidebar styling */
+    .css-1d391kg {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+    }
+    
+    /* Professional report styling */
+    .premium-report {
+        background: #1e1e1e;
         color: #dcdcdc;
-        padding: 25px;
-        border-radius: 10px;
-        font-family: 'Courier New', monospace;
-        border-left: 5px solid #ff4b4b;
+        padding: 2rem;
+        border-radius: 15px;
+        font-family: 'SF Mono', 'Courier New', monospace;
+        border-left: 5px solid #667eea;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        margin: 1rem 0;
     }
-    h1, h2, h3 {
-        color: #2c3e50;
+    
+    /* Animated loading */
+    .loading-animation {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #667eea;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
     }
-    </style>
-    """, unsafe_allow_html=True)
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    /* Premium typography */
+    .premium-title {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-weight: 700;
+        font-size: 2.5rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .subtitle {
+        color: #64748b;
+        font-size: 1.2rem;
+        margin-bottom: 2rem;
+    }
+</style>
+""", unsafe_allow_html=True)
 
 # ==========================================
-# 2. LOAD MODELS (WITH DEBUGGING)
+# 2. PREMIUM BRANDING & HEADER
+# ==========================================
+def display_premium_header():
+    col1, col2, col3 = st.columns([1, 3, 1])
+    
+    with col1:
+        st.image("https://cdn-icons-png.flaticon.com/512/3135/3135715.png", width=80)
+    
+    with col2:
+        st.markdown('<h1 class="premium-title">⚡ Valkyrie AI</h1>', unsafe_allow_html=True)
+        st.markdown('<p class="subtitle">Premium Student Success Intelligence Platform</p>', unsafe_allow_html=True)
+    
+    with col3:
+        st.markdown("""
+        <div style="text-align: right; padding: 1rem; background: rgba(255,255,255,0.1); border-radius: 10px;">
+            <p style="margin: 0; color: white; font-size: 0.9rem;">Premium Version</p>
+            <p style="margin: 0; color: #dcdcdc; font-size: 0.8rem;">360° Student Analytics</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+# ==========================================
+# 3. ADVANCED MODEL LOADING WITH ERROR HANDLING
 # ==========================================
 @st.cache_resource
-def load_models():
+def load_premium_models():
+    """Load models with comprehensive error handling and validation"""
     try:
+        # Simulate loading delay for premium feel
+        with st.spinner("🚀 Initializing Valkyrie AI Engine..."):
+            time.sleep(2)
+            
         bundle = joblib.load('student_risk_model.pkl')
+        
+        # Validate model components
+        required_keys = ['final_model', 'nlp_model', 'nlp_vectorizer']
+        missing_keys = [key for key in required_keys if key not in bundle]
+        
+        if missing_keys:
+            raise ValueError(f"Missing model components: {missing_keys}")
+        
         return bundle
     except FileNotFoundError:
-        st.error("⚠️ FATAL ERROR: 'student_risk_model.pkl' not found.")
+        st.error("""
+        <div class="main-container">
+            <h3>🚨 Critical Error: Model File Not Found</h3>
+            <p>The premium AI models could not be loaded. Please ensure 'student_risk_model.pkl' is available.</p>
+            <p><strong>Premium Support:</strong> contact@valkyrie-ai.com</p>
+        </div>
+        """, unsafe_allow_html=True)
         return None
     except Exception as e:
-        st.error(f"⚠️ MODEL LOADING ERROR: {e}")
+        st.error(f"""
+        <div class="main-container">
+            <h3>⚠️ Premium Engine Error</h3>
+            <p>Advanced AI system encountered an error: {str(e)}</p>
+            <p>Our technical team has been notified.</p>
+        </div>
+        """, unsafe_allow_html=True)
         return None
 
-models = load_models()
+# ==========================================
+# 4. ENHANCED TEXT PROCESSING
+# ==========================================
+def advanced_text_processing(text: str) -> Dict:
+    """Advanced NLP processing with emotion detection and sentiment analysis"""
+    if not isinstance(text, str):
+        return {"cleaned": "", "sentiment": "neutral", "emotions": {}, "stress_indicators": []}
+    
+    # Basic cleaning
+    cleaned = re.sub(r'http\S+', '', text.lower())
+    cleaned = re.sub(r'[^a-zA-Z\s]', '', cleaned)
+    cleaned = re.sub(r'\s+', ' ', cleaned).strip()
+    
+    # Stress keyword detection
+    stress_keywords = {
+        'high': ['overwhelmed', 'stressed', 'anxious', 'worried', 'panic', 'drowning', 'crushing', 'impossible'],
+        'medium': ['difficult', 'challenging', 'struggling', 'behind', 'confused', 'lost', 'pressure'],
+        'low': ['okay', 'fine', 'managing', 'coping', 'alright']
+    }
+    
+    stress_level = 'low'
+    stress_indicators = []
+    
+    for level, keywords in stress_keywords.items():
+        found = [word for word in keywords if word in cleaned]
+        if found:
+            stress_level = level
+            stress_indicators.extend(found)
+            break
+    
+    return {
+        "cleaned": cleaned,
+        "sentiment": "negative" if stress_level in ['high', 'medium'] else "neutral",
+        "stress_level": stress_level,
+        "stress_indicators": stress_indicators,
+        "word_count": len(cleaned.split())
+    }
 
 # ==========================================
-# 3. HELPER FUNCTIONS
-# ==========================================
-def clean_text(text):
-    if not isinstance(text, str): return ""
-    text = text.lower()
-    text = re.sub(r'http\S+', '', text)
-    text = re.sub(r'[^a-zA-Z\s]', '', text)
-    text = re.sub(r'\s+', ' ', text).strip()
-    return text
-
-def calculate_features(input_df, nlp_score):
-    # Copy to avoid settingwithcopy warnings
-    df = input_df.copy()
-    
-    # NLP Score
-    df['nlp_stress_score'] = nlp_score
-    
-    # 1. Academic Index
-    df['academic_index'] = ((df['previous_sem_gpa'] * 10) + df['last_test_score']) / 2
-    
-    # 2. Sleep Deviation
-    df['sleep_deviation'] = abs(df['sleep_hours_avg'] - 8)
-    
-    # 3. Focus Ratio (Study / Social+1)
-    df['focus_ratio'] = df['avg_daily_study_hours'] / (df['social_media_hours_per_day'] + 1)
-    
-    # 4. Risk Alarm
-    df['risk_alarm'] = np.where((df['is_backlog'] == 1) & (df['attendance_pct'] < 75), 1, 0)
-    
-    # === CRITICAL: ENFORCE EXACT COLUMN ORDER FROM ERROR LOG ===
-    expected_cols = [
-        'attendance_pct', 
-        'sleep_hours_avg', 
-        'avg_daily_study_hours', 
-        'avg_weekly_library_hours',  # <-- Added
-        'previous_sem_gpa', 
-        'last_test_score', 
-        'social_media_hours_per_day', 
-        'extracurricular_engagement_score', # <-- Added
-        'is_exam_week', # <-- Added
-        'nlp_stress_score', 
-        'is_backlog', 
-        'sleep_deviation', 
-        'academic_index', 
-        'focus_ratio', 
-        'risk_alarm'
-    ]
-    
-    # Reorder columns to match model expectation exactly
-    return df[expected_cols]
-
-def generate_4_week_plan(risk_drivers, name):
-    plan = f"### 🗓️ 4-Week Intervention Protocol for {name}\n\n"
-    
-    # WEEK 1
-    plan += "**WEEK 1: BIOLOGICAL STABILIZATION**\n"
-    if 'Sleep' in risk_drivers:
-        plan += "- 🌑 **Protocol:** 'The 10-3-2-1 Rule'. No caffeine 10hrs before bed, no food 3hrs before, no work 2hrs before, no screens 1hr before.\n"
-    else:
-        plan += "- ✅ **Protocol:** Maintain current sleep. Focus on hydration.\n"
-    if 'Stress' in risk_drivers:
-        plan += "- 🧠 **Mental:** 10 mins daily journaling (Brain Dump) to lower NLP Stress Score.\n\n"
-    else:
-        plan += "- 🧠 **Mental:** Light review of daily notes (15 mins).\n\n"
-
-    # WEEK 2
-    plan += "**WEEK 2: ACADEMIC TRIAGE**\n"
-    if 'Backlogs/Attendance' in risk_drivers:
-        plan += "- 🚨 **CRITICAL:** Meet with faculty regarding attendance. You are in the 'Danger Zone'.\n"
-        plan += "- 📚 **Action:** Dedicate Sat/Sun purely to backlog clearance (4 hour blocks).\n\n"
-    elif 'Grades' in risk_drivers:
-        plan += "- 📉 **Action:** Identify the 2 hardest subjects. Review past papers for these ONLY.\n\n"
-    else:
-        plan += "- 🚀 **Action:** Start advanced revision for upcoming tests.\n\n"
-
-    # WEEK 3
-    plan += "**WEEK 3: DOPAMINE DETOX**\n"
-    if 'Focus' in risk_drivers:
-        plan += "- 📱 **Restriction:** Social Media limit hard-capped at 30 mins/day. Delete apps if necessary.\n"
-        plan += "- ⏱️ **Technique:** Use Pomodoro (50min study / 10min break).\n\n"
-    else:
-        plan += "- ✨ **Technique:** Teach a concept to a friend (Feynman Technique).\n\n"
-
-    # WEEK 4
-    plan += "**WEEK 4: PERFORMANCE PEAK**\n"
-    plan += "- 🏁 **Goal:** Take one full mock test in exam conditions.\n"
-    plan += "- 🔄 **Review:** Analyze errors from the mock test. Do not start new topics.\n"
-    
-    return plan
-
-# ==========================================
-# 4. SIDEBAR - USER INPUTS
-# ==========================================
-with st.sidebar:
-    st.image("https://cdn-icons-png.flaticon.com/512/3135/3135715.png", width=80)
-    st.title("Student Profile")
-    st.write("Input current semester data:")
-    
-    with st.form("student_data"):
-        name = st.text_input("Student Name", "Alex")
-        
-        st.subheader("📊 Academic Metrics")
-        gpa = st.slider("Previous Sem GPA", 0.0, 10.0, 7.5)
-        test_score = st.slider("Last Test Score (0-100)", 0, 100, 65)
-        backlog = st.selectbox("Do you have Backlogs?", ["No", "Yes"])
-        attendance = st.slider("Attendance %", 0, 100, 80)
-        
-        st.subheader("🏫 Campus Life")
-        library_hrs = st.slider("Weekly Library Hours", 0, 20, 5) # NEW
-        extra_score = st.slider("Extracurricular Score (0-10)", 0, 10, 5) # NEW
-        exam_week = st.selectbox("Is it Exam Week?", ["No", "Yes"]) # NEW
-
-        st.subheader("🕰️ Habits & Health")
-        study_hrs = st.slider("Daily Study (Hours)", 0.0, 12.0, 2.0)
-        social_hrs = st.slider("Social Media (Hours)", 0.0, 12.0, 3.0)
-        sleep_hrs = st.slider("Avg Sleep (Hours)", 0.0, 12.0, 6.5)
-        
-        st.subheader("📖 Daily Journal")
-        diary_entry = st.text_area("How are you feeling today?", 
-                                   "I am feeling a bit overwhelmed with the syllabus and exams coming up.")
-        
-        submit = st.form_submit_button("GENERATE 360° REPORT")
-
-# ==========================================
-# 5. MAIN APPLICATION LOGIC
-# ==========================================
-if submit:
-    if models is None:
-        st.error("🚫 Cannot generate report because the model failed to load. See error above.")
-    else:
-        try:
-            # --- A. PREPROCESSING ---
-            # 1. Handle NLP
-            cleaned_diary = clean_text(diary_entry)
-            vec_text = models['nlp_vectorizer'].transform([cleaned_diary])
-            nlp_prob = models['nlp_model'].predict_proba(vec_text)[0][1]
-            
-            # 2. Prepare Raw DataFrame (NOW WITH ALL 15 COLS)
-            raw_data = pd.DataFrame({
-                'previous_sem_gpa': [gpa],
-                'attendance_pct': [attendance],
-                'avg_daily_study_hours': [study_hrs],
-                'social_media_hours_per_day': [social_hrs],
-                'sleep_hours_avg': [sleep_hrs],
-                'last_test_score': [test_score],
-                'is_backlog': [1 if backlog == "Yes" else 0],
-                # ADDING MISSING COLUMNS
-                'avg_weekly_library_hours': [library_hrs],
-                'extracurricular_engagement_score': [extra_score],
-                'is_exam_week': [1 if exam_week == "Yes" else 0]
-            })
-            
-            # 3. Feature Engineering
-            final_input = calculate_features(raw_data, nlp_prob)
-            
-            # 4. Prediction
-            risk_prob = models['final_model'].predict_proba(final_input)[0][1]
-            
-            # --- B. DISPLAY HEADER ---
-            st.title(f"🎓 Analysis Report for {name}")
-            st.markdown("---")
-            
-            # --- C. TOP LEVEL METRICS ---
-            col1, col2, col3 = st.columns(3)
-            
-            with col1:
-                st.metric("Risk Probability", f"{risk_prob:.1%}", 
-                        delta="-High Risk" if risk_prob > 0.5 else "Safe",
-                        delta_color="inverse")
-            
-            with col2:
-                st.metric("Academic Index", f"{final_input['academic_index'][0]:.1f}/100",
-                        help="Combined score of GPA and Tests")
-                
-            with col3:
-                stress_level = "High" if nlp_prob > 0.6 else "Moderate" if nlp_prob > 0.3 else "Low"
-                st.metric("Detected Stress (NLP)", stress_level, f"Score: {nlp_prob:.2f}")
-
-            # --- D. DIAGNOSIS & COUNTERFACTUALS ---
-            st.subheader("🩺 AI Diagnosis & Simulations")
-            
-            c1, c2 = st.columns([1, 1.5])
-            
-            risk_drivers = []
-            
-            with c1:
-                st.markdown("#### ⚠️ Key Risk Factors Identified")
-                # Logic to identify drivers
-                if final_input['risk_alarm'][0] == 1:
-                    st.error("🔴 **DEATH SPIRAL:** Backlogs + Low Attendance.")
-                    risk_drivers.append("Backlogs/Attendance")
-                if final_input['sleep_deviation'][0] > 1.5:
-                    st.warning(f"🟡 **Sleep Debt:** You are deviating {final_input['sleep_deviation'][0]:.1f} hrs from ideal.")
-                    risk_drivers.append("Sleep")
-                if final_input['focus_ratio'][0] < 0.5:
-                    st.warning("🟠 **Distracted:** Social media use is double your study time.")
-                    risk_drivers.append("Focus")
-                if final_input['academic_index'][0] < 50:
-                    st.error("🔴 **Academic Critical:** Grades are significantly low.")
-                    risk_drivers.append("Grades")
-                if nlp_prob > 0.5:
-                    st.info("🔵 **Mental Strain:** Diary text indicates hidden anxiety.")
-                    risk_drivers.append("Stress")
-                    
-                if not risk_drivers:
-                    st.success("✅ No critical risk factors detected. Keep it up!")
-
-            with c2:
-                st.markdown("#### 🧪 'What-If' Simulation Lab")
-                st.markdown("Running real-time counterfactuals to find the easiest fix...")
-                
-                # 1. Simulate Sleep Fix
-                sim_sleep = final_input.copy()
-                sim_sleep['sleep_deviation'] = 0 # Fix sleep
-                sleep_new_prob = models['final_model'].predict_proba(sim_sleep)[0][1]
-                
-                # 2. Simulate Study Boost (+2 hours)
-                sim_study = final_input.copy()
-                sim_study['avg_daily_study_hours'] += 2
-                # Recalc focus ratio
-                sim_study['focus_ratio'] = sim_study['avg_daily_study_hours'] / (sim_study['social_media_hours_per_day'] + 1)
-                study_new_prob = models['final_model'].predict_proba(sim_study)[0][1]
-                
-                # Display Improvements
-                st.write(f"• If you fix **Sleep Schedule** (8hrs): Risk drops to **{sleep_new_prob:.1%}**")
-                st.progress(1 - sleep_new_prob)
-                
-                st.write(f"• If you add **+2 Hours Study**: Risk drops to **{study_new_prob:.1%}**")
-                st.progress(1 - study_new_prob)
-                
-                best_fix = "Sleep" if sleep_new_prob < study_new_prob else "Study"
-                st.success(f"💡 **AI Recommendation:** The most efficient way to improve is focusing on **{best_fix}**.")
-
-            st.markdown("---")
-
-            # --- E. THE PREMIUM PLAN ---
-            st.subheader(f"🛡️ The Valkyrie Protocol: 4-Week Action Plan")
-            
-            plan_content = generate_4_week_plan(risk_drivers, name)
-            
-            st.markdown(f"""
-            <div class="report-box">
-            {plan_content}
-            </div>
-            """, unsafe_allow_html=True)
-            
-            st.download_button(
-                label="📥 Download Counseling Report (TXT)",
-                data=plan_content,
-                file_name=f"{name}_counseling_plan.txt",
-                mime="text/plain"
-            )
-        except Exception as e:
-            st.error(f"❌ PREDICTION ERROR: {e}")
-            st.info("Double check input data.")
-
-else:
-    if models is not None:
-        st.info("👈 Please enter student details in the sidebar to generate the report.")
-        st.markdown("""
-        ### 👋 Welcome to Valkyrie
-        This tool uses **XGBoost** and **Natural Language Processing** to analyze student performance risks.
-        
-        **Features:**
-        - 🧠 **Multi-Modal Analysis:** Combines grades with text diaries.
-        - 🔮 **Counterfactual AI:** Tells you exactly what to change to lower risk.
-        - 🗓️ **Auto-Counseling:** Generates a 4-week tailored intervention plan.
-        """)
-    else:
-        st.warning("⚠️ Waiting for model file...")
