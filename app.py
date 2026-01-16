@@ -69,8 +69,6 @@ st.markdown("""
         text-align: center;
         margin-bottom: 2rem;
         box-shadow: var(--shadow-xl);
-        position: relative;
-        overflow: hidden;
     }
     
     .brand-title {
@@ -237,8 +235,8 @@ st.markdown("""
         padding: 2.5rem;
         margin: 2rem 0;
         font-family: 'JetBrains Mono', monospace;
-        font-size: 0.9rem;
-        line-height: 1.6;
+        font-size: 0.85rem;
+        line-height: 1.5;
         color: var(--neutral-800);
         box-shadow: var(--shadow-sm);
         position: relative;
@@ -311,29 +309,17 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 2. PREMIUM HEADER COMPONENT
-# ==========================================
-def display_premium_header():
-    st.markdown("""
-    <div class="premium-header animate-in">
-        <h1 class="brand-title">⚡ Valkyrie AI</h1>
-        <p class="brand-subtitle">Premium Student Success Intelligence Platform</p>
-    </div>
-    """, unsafe_allow_html=True)
-
-# ==========================================
-# 3. MODEL LOADING WITH PREMIUM UI
+# 2. MODEL LOADING WITH ERROR HANDLING
 # ==========================================
 @st.cache_resource
 def load_premium_models():
     try:
-        # Premium loading experience
         with st.spinner("🚀 Initializing Valkyrie AI Premium Engine..."):
-            time.sleep(2)  # Premium feel
+            time.sleep(2)
             
         bundle = joblib.load('student_risk_model.pkl')
         
-        # Validate model components
+        # Validate required components
         required_keys = ['final_model', 'nlp_model', 'nlp_vectorizer']
         missing_keys = [key for key in required_keys if key not in bundle]
         
@@ -362,7 +348,7 @@ def load_premium_models():
         return None
 
 # ==========================================
-# 4. CORE PROCESSING FUNCTIONS
+# 3. CORE PROCESSING FUNCTIONS
 # ==========================================
 def clean_text(text):
     """Clean and process text input"""
@@ -391,7 +377,7 @@ def calculate_features(input_df, nlp_score):
     # Risk Alarm
     df['risk_alarm'] = np.where((df['is_backlog'] == 1) & (df['attendance_pct'] < 75), 1, 0)
     
-    # Expected column order
+    # Expected column order - CONSISTENT WITH YOUR MODEL
     expected_cols = [
         'attendance_pct', 'sleep_hours_avg', 'avg_daily_study_hours',
         'avg_weekly_library_hours', 'previous_sem_gpa', 'last_test_score',
@@ -546,7 +532,7 @@ The Valkyrie AI Team
     return report
 
 # ==========================================
-# 5. PREMIUM SIDEBAR
+# 4. PREMIUM SIDEBAR
 # ==========================================
 def premium_sidebar():
     with st.sidebar:
@@ -589,7 +575,7 @@ def premium_sidebar():
                 attendance = st.slider("Attendance %", 0, 100, 85, 
                                      help="Overall attendance")
             
-            # Campus Life
+            # Campus Life - ONLY USE FEATURES THAT EXIST IN YOUR MODEL
             st.markdown("### 🏫 Campus Engagement")
             
             col1, col2 = st.columns(2)
@@ -619,8 +605,6 @@ def premium_sidebar():
             with col2:
                 stress_level = st.slider("Stress Level", 1, 10, 5, 
                                        help="1=Very Low, 10=Very High")
-                exercise_hrs = st.slider("Exercise Hours/Week", 0, 20, 3, 
-                                         help="Physical activity time")
             
             # Daily Reflection
             st.markdown("### 📝 Daily Reflection")
@@ -635,210 +619,10 @@ def premium_sidebar():
                                             use_container_width=True,
                                             help="Generate your comprehensive premium report")
     
-    return submitted, name, student_id, gpa, test_score, backlog, attendance, library_hrs, extra_score, study_hrs, social_hrs, sleep_hrs, stress_level, exercise_hrs, diary_entry
+    return submitted, name, student_id, gpa, test_score, backlog, attendance, library_hrs, extra_score, study_hrs, social_hrs, sleep_hrs, stress_level, diary_entry
 
 # ==========================================
-# 6. PREMIUM ANALYSIS DISPLAY
-# ==========================================
-def display_premium_analysis(results):
-    """Display analysis results with premium styling"""
-    
-    # Premium header for results
-    st.markdown(f"""
-    <div class="premium-card animate-in">
-        <h2 style="text-align: center; color: var(--neutral-900); margin: 0;">🎓 Premium Analysis Report</h2>
-        <p style="text-align: center; color: var(--neutral-600); margin: 0.5rem 0;">Generated for {results['name']} • {datetime.now().strftime('%B %d, %Y at %I:%M %p')}</p>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # Premium metrics grid
-    col1, col2, col3, col4 = st.columns(4)
-    
-    with col1:
-        risk_status = 'HIGH' if results['risk_prob'] > 0.6 else 'MEDIUM' if results['risk_prob'] > 0.3 else 'LOW'
-        risk_color = 'var(--danger-red)' if results['risk_prob'] > 0.6 else 'var(--warning-orange)' if results['risk_prob'] > 0.3 else 'var(--success-green)'
-        
-        st.markdown(f"""
-        <div class="metric-card-premium animate-in">
-            <div class="metric-value">{results['risk_prob']:.1%}</div>
-            <div class="metric-label">Risk Probability</div>
-            <div class="metric-status" style="background: {risk_color}; color: white;">{risk_status} RISK</div>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    with col2:
-        academic_status = 'Excellent' if results['academic_index'] >= 80 else 'Good' if results['academic_index'] >= 60 else 'Needs Work'
-        academic_color = 'var(--success-green)' if results['academic_index'] >= 80 else 'var(--warning-orange)' if results['academic_index'] >= 60 else 'var(--danger-red)'
-        
-        st.markdown(f"""
-        <div class="metric-card-premium animate-in" style="animation-delay: 0.1s;">
-            <div class="metric-value">{results['academic_index']:.0f}</div>
-            <div class="metric-label">Academic Index</div>
-            <div class="metric-status" style="background: {academic_color}; color: white;">{academic_status}</div>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    with col3:
-        stress_score = results['nlp_prob'] * 10
-        stress_status = 'Low' if stress_score <= 4 else 'Moderate' if stress_score <= 7 else 'High'
-        stress_color = 'var(--success-green)' if stress_score <= 4 else 'var(--warning-orange)' if stress_score <= 7 else 'var(--danger-red)'
-        
-        st.markdown(f"""
-        <div class="metric-card-premium animate-in" style="animation-delay: 0.2s;">
-            <div class="metric-value">{stress_score:.1f}</div>
-            <div class="metric-label">Stress Level</div>
-            <div class="metric-status" style="background: {stress_color}; color: white;">{stress_status}</div>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    with col4:
-        focus_status = 'Excellent' if results['focus_ratio'] > 2 else 'Good' if results['focus_ratio'] > 1 else 'Needs Improvement'
-        focus_color = 'var(--success-green)' if results['focus_ratio'] > 2 else 'var(--warning-orange)' if results['focus_ratio'] > 1 else 'var(--danger-red)'
-        
-        st.markdown(f"""
-        <div class="metric-card-premium animate-in" style="animation-delay: 0.3s;">
-            <div class="metric-value">{results['focus_ratio']:.2f}</div>
-            <div class="metric-label">Focus Ratio</div>
-            <div class="metric-status" style="background: {focus_color}; color: white;">{focus_status}</div>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    # Risk Analysis Section
-    st.markdown("---")
-    st.markdown("### 🩺 Premium Risk Analysis")
-    
-    col1, col2 = st.columns([1, 2])
-    
-    risk_drivers = []
-    
-    with col1:
-        st.markdown("#### ⚠️ Risk Factors Identified")
-        
-        if results['final_input']['risk_alarm'][0] == 1:
-            st.markdown("""
-            <div class="risk-indicator risk-critical animate-in">
-                <h4 style="margin: 0 0 0.5rem 0;">🚨 Critical Alert</h4>
-                <p style="margin: 0; font-weight: 600;">Death Spiral Detected</p>
-                <p style="margin: 0.25rem 0 0 0; font-size: 0.9rem; opacity: 0.8;">Backlogs + Low Attendance</p>
-            </div>
-            """, unsafe_allow_html=True)
-            risk_drivers.append("Backlogs/Attendance")
-        
-        if results['final_input']['sleep_deviation'][0] > 1.5:
-            st.markdown(f"""
-            <div class="risk-indicator risk-high animate-in" style="animation-delay: 0.1s;">
-                <h4 style="margin: 0 0 0.5rem 0;">⚠️ Sleep Debt</h4>
-                <p style="margin: 0; font-weight: 600;">{results['final_input']['sleep_deviation'][0]:.1f}h deviation</p>
-                <p style="margin: 0.25rem 0 0 0; font-size: 0.9rem; opacity: 0.8;">From optimal 8 hours</p>
-            </div>
-            """, unsafe_allow_html=True)
-            risk_drivers.append("Sleep")
-        
-        if results['final_input']['focus_ratio'][0] < 0.5:
-            st.markdown("""
-            <div class="risk-indicator risk-medium animate-in" style="animation-delay: 0.2s;">
-                <h4 style="margin: 0 0 0.5rem 0;">📱 Distraction Risk</h4>
-                <p style="margin: 0; font-weight: 600;">Low Focus Ratio</p>
-                <p style="margin: 0.25rem 0 0 0; font-size: 0.9rem; opacity: 0.8;">Social > Study Time</p>
-            </div>
-            """, unsafe_allow_html=True)
-            risk_drivers.append("Focus")
-        
-        if results['final_input']['academic_index'][0] < 50:
-            st.markdown("""
-            <div class="risk-indicator risk-high animate-in" style="animation-delay: 0.3s;">
-                <h4 style="margin: 0 0 0.5rem 0;">📚 Academic Critical</h4>
-                <p style="margin: 0; font-weight: 600;">Low Performance</p>
-                <p style="margin: 0.25rem 0 0 0; font-size: 0.9rem; opacity: 0.8;">Immediate intervention needed</p>
-            </div>
-            """, unsafe_allow_html=True)
-            risk_drivers.append("Grades")
-        
-        if results['nlp_prob'] > 0.6:
-            st.markdown("""
-            <div class="risk-indicator risk-medium animate-in" style="animation-delay: 0.4s;">
-                <h4 style="margin: 0 0 0.5rem 0;">🧠 Mental Strain</h4>
-                <p style="margin: 0; font-weight: 600;">High Stress Detected</p>
-                <p style="margin: 0.25rem 0 0 0; font-size: 0.9rem; opacity: 0.8;">From text analysis</p>
-            </div>
-            """, unsafe_allow_html=True)
-            risk_drivers.append("Stress")
-        
-        if not risk_drivers:
-            st.markdown("""
-            <div class="risk-indicator risk-low animate-in">
-                <h4 style="margin: 0 0 0.5rem 0;">✅ Optimal Status</h4>
-                <p style="margin: 0; font-weight: 600;">No Critical Risks</p>
-                <p style="margin: 0.25rem 0 0 0; font-size: 0.9rem; opacity: 0.8;">Keep up the great work!</p>
-            </div>
-            """, unsafe_allow_html=True)
-    
-    with col2:
-        st.markdown("#### 🔮 Counterfactual Analysis")
-        st.markdown("Running real-time simulations to find your optimal improvement path...")
-        
-        # Simulate different scenarios
-        scenarios = []
-        
-        # Sleep optimization
-        sim_sleep = results['final_input'].copy()
-        sim_sleep['sleep_deviation'] = 0
-        sleep_new_prob = results['models']['final_model'].predict_proba(sim_sleep)[0][1]
-        scenarios.append({
-            'action': 'Sleep Optimization (8 hours)',
-            'new_risk': sleep_new_prob,
-            'effort': 'Low',
-            'timeline': '1 week'
-        })
-        
-        # Study increase
-        sim_study = results['final_input'].copy()
-        sim_study['avg_daily_study_hours'] += 2
-        sim_study['focus_ratio'] = sim_study['avg_daily_study_hours'] / (sim_study['social_media_hours_per_day'] + 1)
-        study_new_prob = results['models']['final_model'].predict_proba(sim_study)[0][1]
-        scenarios.append({
-            'action': 'Increase Study (+2 hours daily)',
-            'new_risk': study_new_prob,
-            'effort': 'Medium',
-            'timeline': '2 weeks'
-        })
-        
-        # Social media reduction
-        sim_social = results['final_input'].copy()
-        sim_social['social_media_hours_per_day'] *= 0.5
-        sim_social['focus_ratio'] = sim_social['avg_daily_study_hours'] / (sim_social['social_media_hours_per_day'] + 1)
-        social_new_prob = results['models']['final_model'].predict_proba(sim_social)[0][1]
-        scenarios.append({
-            'action': 'Reduce Social Media (-50%)',
-            'new_risk': social_new_prob,
-            'effort': 'Medium',
-            'timeline': '1 week'
-        })
-        
-        # Display scenarios in elegant cards
-        for i, scenario in enumerate(scenarios):
-            improvement = results['risk_prob'] - scenario['new_risk']
-            
-            st.markdown(f"""
-            <div class="premium-card animate-in" style="animation-delay: {0.1 * (i + 1)}s; margin: 1rem 0;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                    <h4 style="margin: 0; color: var(--neutral-900);">{scenario['action']}</h4>
-                    <span style="background: var(--accent-gold); color: white; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600;">{scenario['effort']} Effort</span>
-                </div>
-                <p style="margin: 0.5rem 0; color: var(--neutral-600);">New Risk: <strong>{scenario['new_risk']:.1%}</strong> (Improvement: {improvement:.1%})</p>
-                <p style="margin: 0; color: var(--neutral-500); font-size: 0.9rem;">Timeline: {scenario['timeline']}</p>
-                <div style="margin-top: 1rem;">
-                    <div style="background: var(--neutral-200); border-radius: 10px; height: 8px; overflow: hidden;">
-                        <div style="background: var(--success-green); width: {(1 - scenario['new_risk']) * 100}%; height: 100%; border-radius: 10px; transition: width 0.5s ease;"></div>
-                    </div>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-    
-    return risk_drivers
-
-# ==========================================
-# 7. MAIN APPLICATION
+# 5. MAIN APPLICATION
 # ==========================================
 def main():
     # Display premium header
@@ -850,7 +634,7 @@ def main():
         st.stop()
     
     # Premium sidebar
-    submitted, name, student_id, gpa, test_score, backlog, attendance, library_hrs, extra_score, study_hrs, social_hrs, sleep_hrs, stress_level, exercise_hrs, diary_entry = premium_sidebar()
+    submitted, name, student_id, gpa, test_score, backlog, attendance, library_hrs, extra_score, study_hrs, social_hrs, sleep_hrs, stress_level, diary_entry = premium_sidebar()
     
     # Main analysis area
     if submitted:
@@ -864,7 +648,7 @@ def main():
             vec_text = models['nlp_vectorizer'].transform([cleaned_diary])
             nlp_prob = models['nlp_model'].predict_proba(vec_text)[0][1]
             
-            # Prepare premium data (WITHOUT is_exam_week)
+            # Prepare premium data - ONLY FEATURES THAT EXIST IN YOUR MODEL
             raw_data = pd.DataFrame({
                 'previous_sem_gpa': [gpa],
                 'attendance_pct': [attendance],
@@ -972,13 +756,9 @@ Next Steps: Follow the 4-week transformation plan for optimal results.
             """, unsafe_allow_html=True)
             
         except Exception as e:
-            st.error(f"""
-            <div class="premium-card" style="border-color: var(--danger-red);">
-                <h3 style="color: var(--danger-red); margin: 0;">❌ Analysis Error</h3>
-                <p style="margin: 0.5rem 0;">{str(e)}</p>
-                <p style="margin: 0; font-size: 0.9rem; color: var(--neutral-600);">Please check your inputs and try again.</p>
-            </div>
-            """, unsafe_allow_html=True)
+            # Simple error display without HTML formatting issues
+            st.error(f"Analysis Error: {str(e)}")
+            st.info("Please check your inputs and try again.")
     
     else:
         # Professional welcome screen
