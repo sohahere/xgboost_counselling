@@ -5,7 +5,6 @@ import joblib
 import re
 import time
 from datetime import datetime
-import base64
 
 # ==========================================
 # 1. PAGE CONFIGURATION
@@ -17,11 +16,11 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Premium CSS styling (built-in only)
+# Premium CSS styling
 st.markdown("""
 <style>
     /* Premium gradient background */
-    .main {
+    .stApp {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     }
     
@@ -116,43 +115,14 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 2. PREMIUM HEADER
-# ==========================================
-def display_header():
-    col1, col2, col3 = st.columns([1, 3, 1])
-    
-    with col1:
-        st.image("https://cdn-icons-png.flaticon.com/512/3135/3135715.png", width=60)
-    
-    with col2:
-        st.markdown("""
-        <div style="text-align: center;">
-            <h1 style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-                     font-weight: 700; margin-bottom: 0.5rem;">
-                ⚡ Valkyrie AI
-            </h1>
-            <p style="color: #64748b; margin: 0;">Premium Student Success Intelligence Platform</p>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    with col3:
-        st.markdown("""
-        <div style="text-align: right; padding: 0.5rem; background: rgba(255,255,255,0.1); border-radius: 10px;">
-            <p style="margin: 0; color: white; font-size: 0.8rem;">Premium Version</p>
-            <p style="margin: 0; color: #dcdcdc; font-size: 0.7rem;">360° Analytics</p>
-        </div>
-        """, unsafe_allow_html=True)
-
-# ==========================================
-# 3. MODEL LOADING WITH ERROR HANDLING
+# 2. MODEL LOADING WITH ERROR HANDLING
 # ==========================================
 @st.cache_resource
 def load_models():
     try:
         # Show loading animation
         with st.spinner("🚀 Initializing Valkyrie AI Engine..."):
-            time.sleep(1.5)  # Premium feel loading delay
+            time.sleep(1.5)
             
         bundle = joblib.load('student_risk_model.pkl')
         
@@ -166,14 +136,20 @@ def load_models():
             
         return bundle
     except FileNotFoundError:
-        st.error("🚨 Model file not found. Please ensure 'student_risk_model.pkl' is uploaded.")
+        st.error("""
+        <div style="background: rgba(255,255,255,0.95); padding: 2rem; border-radius: 15px; text-align: center;">
+            <h3>🚨 Model File Not Found</h3>
+            <p>Please ensure 'student_risk_model.pkl' is uploaded to your app directory.</p>
+            <p><strong>Support:</strong> contact@valkyrie-ai.com</p>
+        </div>
+        """, unsafe_allow_html=True)
         return None
     except Exception as e:
         st.error(f"Model loading error: {str(e)}")
         return None
 
 # ==========================================
-# 4. CORE FUNCTIONS
+# 3. CORE FUNCTIONS
 # ==========================================
 def clean_text(text):
     if not isinstance(text, str): return ""
@@ -302,140 +278,44 @@ MILESTONE TARGETS:
 ═══════════════════════════════════════════════════════════════
 """
     
-    # Week 3 - Mastery
-    plan += """
-🎯 WEEK 3: MASTERY & OPTIMIZATION
-Focus: Peak performance and skill refinement
-
-ADVANCED PROTOCOLS:
-"""
-    plan += "● Peak Performance: Identify and replicate your optimal study conditions\n"
-    plan += "● Speed Learning: 2x video playback with active note-taking\n"
-    plan += "● Memory Palace: Implement for complex information retention\n"
-    plan += "● Mock Examination: Full practice test under exam conditions\n"
-    
-    if 'Stress' in risk_drivers:
-        plan += "● Stress Inoculation: Gradual exposure to pressure situations\n"
-        plan += "● Cognitive Behavioral Techniques: Challenge negative thought patterns\n"
-    
-    plan += f"""
-PROFESSIONAL DEVELOPMENT:
-● Network building with high-performing peers
-● Mentor identification and connection
-● Industry trend research and integration
-● Long-term career pathway mapping
-
-PERFORMANCE METRICS:
-□ Mock exam score improvement: Target 75%+
-□ Study efficiency: 90%+ retention rate
-□ Stress management: Maintain <4/10 daily
-□ Network expansion: 3 new academic connections
-
-═══════════════════════════════════════════════════════════════
-"""
-    
-    # Week 4 - Consolidation
-    plan += """
-🏆 WEEK 4: CONSOLIDATION & FUTURE-PROOFING
-Focus: Maintaining gains and building sustainable systems
-
-SUSTAINABILITY PROTOCOLS:
-"""
-    plan += "● System Automation: Create habits that run on autopilot\n"
-    plan += "● Relapse Prevention: Identify triggers and create counter-strategies\n"
-    plan += "● Performance Monitoring: Weekly self-assessment routine\n"
-    plan += "● Continuous Improvement: Monthly optimization reviews\n"
-    
-    plan += """
-LONG-TERM STRATEGIES:
-● Advanced course planning for next semester
-● Scholarship and opportunity identification
-● Research project initiation
-● Leadership role development
-
-LIFESTYLE MASTERY:
-● Permanent habit integration
-● Advanced nutrition and supplementation
-● Sleep cycle optimization for chronotype
-● Stress resilience building
-
-FINAL ASSESSMENT TARGETS:
-□ Risk probability reduced by 50%
-□ Academic index: 80+ (Excellent range)
-□ Consistency score: 95%+ daily completion
-□ Stress level: <3/10 sustained
-□ Network: 10+ academic connections
-□ Leadership: 1 initiative started
-
-═══════════════════════════════════════════════════════════════
-
-🎓 GRADUATION PROTOCOL:
-Upon successful completion, you'll receive:
-● Personalized maintenance schedule
-● Advanced skill development roadmap
-● Leadership opportunity pipeline
-● Alumni network access
-● Career acceleration strategy
-
-⚡ NEXT LEVEL OPTIONS:
-1. Advanced Performance Coaching (APC-90 Program)
-2. Research Excellence Track (RET-100)
-3. Leadership Development Intensive (LDI-85)
-4. Career Acceleration Protocol (CAP-95)
-
-Stay legendary,
-The Valkyrie AI Team
-"""
-    
     return plan
 
-def create_progress_visualization(current_risk: float, target_risk: float, scenarios: List[Dict]):
-    """Create simple progress visualization using Streamlit native components"""
-    
-    st.markdown("### 🎯 Risk Reduction Pathways")
-    
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        st.metric("Current Risk", f"{current_risk:.1%}", 
-                 delta=f"{current_risk - target_risk:.1%} reduction needed",
-                 delta_color="inverse")
-    
-    with col2:
-        st.metric("Target Risk", f"{target_risk:.1%}", "Optimal Level")
-    
-    with col3:
-        improvement = ((current_risk - target_risk) / current_risk) * 100
-        st.metric("Improvement Potential", f"{improvement:.0f}%", "Achievable")
-    
-    # Scenario comparison
-    st.markdown("#### 💡 Optimization Scenarios")
-    
-    for scenario in scenarios:
-        col1, col2 = st.columns([3, 1])
-        
-        with col1:
-            st.write(f"**{scenario['action']}**")
-            st.write(f"New Risk: **{scenario['new_risk']:.1%}**")
-            st.progress(1 - scenario['new_risk'])
-        
-        with col2:
-            improvement = current_risk - scenario['new_risk']
-            st.metric("Improvement", f"{improvement:.1%}", 
-                     delta=f"{(improvement/current_risk)*100:.0f}%")
-
 # ==========================================
-# 5. MAIN APPLICATION
+# 4. MAIN APPLICATION
 # ==========================================
 def main():
-    display_header()
+    # Premium header
+    col1, col2, col3 = st.columns([1, 3, 1])
+    
+    with col1:
+        st.image("https://cdn-icons-png.flaticon.com/512/3135/3135715.png", width=60)
+    
+    with col2:
+        st.markdown("""
+        <div style="text-align: center;">
+            <h1 style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+                     font-weight: 700; margin-bottom: 0.5rem;">
+                ⚡ Valkyrie AI
+            </h1>
+            <p style="color: #64748b; margin: 0;">Premium Student Success Intelligence Platform</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col3:
+        st.markdown("""
+        <div style="text-align: right; padding: 0.5rem; background: rgba(255,255,255,0.1); border-radius: 10px;">
+            <p style="margin: 0; color: white; font-size: 0.8rem;">Premium Version</p>
+            <p style="margin: 0; color: #dcdcdc; font-size: 0.7rem;">360° Analytics</p>
+        </div>
+        """, unsafe_allow_html=True)
     
     # Load models
     models = load_models()
     if models is None:
         st.stop()
     
-    # Sidebar with premium styling
+    # Sidebar with premium form
     with st.sidebar:
         st.markdown("""
         <div style="background: rgba(255,255,255,0.1); padding: 1rem; border-radius: 10px; margin-bottom: 1rem;">
@@ -462,7 +342,7 @@ def main():
                 backlog = st.selectbox("Backlogs", ["No", "Yes"], help="Any pending subjects")
                 attendance = st.slider("Attendance %", 0, 100, 85, help="Overall attendance")
             
-            # Campus Life (New Fields)
+            # Campus Life
             st.markdown("### 🏫 Campus Engagement")
             col1, col2 = st.columns(2)
             with col1:
@@ -484,17 +364,12 @@ def main():
                 stress_level = st.slider("Stress Level", 1, 10, 5, help="1=Very Low, 10=Very High")
                 exercise_hrs = st.slider("Exercise Hours/Week", 0, 20, 3, help="Physical activity time")
             
-            # Daily Journal (Premium NLP Analysis)
+            # Daily Journal
             st.markdown("### 📝 Daily Reflection")
             diary_entry = st.text_area("How are you feeling today?", 
                                      "I feel overwhelmed with the upcoming exams and assignments.",
                                      height=100,
                                      help="Our AI will analyze your emotional state")
-            
-            # Premium features toggle
-            st.markdown("### ⚡ Premium Features")
-            detailed_plan = st.checkbox("Generate Detailed 4-Week Plan", value=True)
-            counterfactual_analysis = st.checkbox("Include Counterfactual Scenarios", value=True)
             
             submitted = st.form_submit_button("🔍 GENERATE PREMIUM ANALYSIS", 
                                             use_container_width=True)
@@ -530,7 +405,7 @@ def main():
             
             # Display premium results
             st.markdown(f"""
-            <div class="glass-container">
+            <div style="background: rgba(255,255,255,0.95); padding: 2rem; border-radius: 20px; margin: 1rem 0;">
                 <h2 style="text-align: center; color: #2c3e50;">🎓 Premium Analysis Report</h2>
                 <p style="text-align: center; color: #7f8c8d;">Generated: {datetime.now().strftime('%B %d, %Y at %I:%M %p')}</p>
             </div>
@@ -704,33 +579,32 @@ def main():
                         st.write(f"Timeline: **{scenario['timeline']}**")
             
             # Premium 4-week plan
-            if detailed_plan:
-                st.markdown("---")
-                st.markdown("### 📋 Premium 4-Week Transformation Plan")
-                
-                plan_content = generate_premium_4_week_plan(risk_drivers, name, risk_prob)
-                
-                st.markdown(f"""
-                <div class="premium-report">
-                    <pre>{plan_content}</pre>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                # Download options
-                col1, col2, col3 = st.columns(3)
-                
-                with col1:
-                    st.download_button(
-                        label="📄 Download Full Report",
-                        data=plan_content,
-                        file_name=f"{name.replace(' ', '_')}_Valkyrie_Report_{datetime.now().strftime('%Y%m%d')}.txt",
-                        mime="text/plain",
-                        use_container_width=True
-                    )
-                
-                with col2:
-                    # Create summary for download
-                    summary = f"""
+            st.markdown("---")
+            st.markdown("### 📋 Premium 4-Week Transformation Plan")
+            
+            plan_content = generate_premium_4_week_plan(risk_drivers, name, risk_prob)
+            
+            st.markdown(f"""
+            <div class="premium-report">
+                <pre>{plan_content}</pre>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # Download options
+            col1, col2, col3 = st.columns(3)
+            
+            with col1:
+                st.download_button(
+                    label="📄 Download Full Report",
+                    data=plan_content,
+                    file_name=f"{name.replace(' ', '_')}_Valkyrie_Report_{datetime.now().strftime('%Y%m%d')}.txt",
+                    mime="text/plain",
+                    use_container_width=True
+                )
+            
+            with col2:
+                # Create summary for download
+                summary = f"""
 Valkyrie AI - Executive Summary
 Student: {name}
 Date: {datetime.now().strftime('%B %d, %Y')}
@@ -745,24 +619,24 @@ Key Recommendations:
 
 Next Steps: Follow the 4-week transformation plan for optimal results.
 """
-                    st.download_button(
-                        label="📊 Download Summary",
-                        data=summary,
-                        file_name=f"{name.replace(' ', '_')}_Executive_Summary.txt",
-                        mime="text/plain",
-                        use_container_width=True
-                    )
-                
-                with col3:
-                    # Create action items
-                    action_items = "\n".join([f"{i+1}. {driver}" for i, driver in enumerate(risk_drivers)]) if risk_drivers else "1. Maintain current excellence"
-                    st.download_button(
-                        label="✅ Download Action Items",
-                        data=f"Priority Actions for {name}:\n\n{action_items}",
-                        file_name=f"{name.replace(' ', '_')}_Action_Items.txt",
-                        mime="text/plain",
-                        use_container_width=True
-                    )
+                st.download_button(
+                    label="📊 Download Summary",
+                    data=summary,
+                    file_name=f"{name.replace(' ', '_')}_Executive_Summary.txt",
+                    mime="text/plain",
+                    use_container_width=True
+                )
+            
+            with col3:
+                # Create action items
+                action_items = "\n".join([f"{i+1}. {driver}" for i, driver in enumerate(risk_drivers)]) if risk_drivers else "1. Maintain current excellence"
+                st.download_button(
+                    label="✅ Download Action Items",
+                    data=f"Priority Actions for {name}:\n\n{action_items}",
+                    file_name=f"{name.replace(' ', '_')}_Action_Items.txt",
+                    mime="text/plain",
+                    use_container_width=True
+                )
             
             # Premium footer
             st.markdown("---")
