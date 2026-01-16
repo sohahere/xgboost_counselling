@@ -55,16 +55,13 @@ st.markdown("""
 @st.cache_resource
 def load_models():
     try:
-        # Try loading the model bundle
         bundle = joblib.load('student_risk_model.pkl')
         return bundle
     except FileNotFoundError:
         st.error("⚠️ FATAL ERROR: 'student_risk_model.pkl' not found.")
-        st.info("Please make sure you uploaded the .pkl file to the GitHub repository.")
         return None
     except Exception as e:
         st.error(f"⚠️ MODEL LOADING ERROR: {e}")
-        st.info("This usually happens due to version mismatch between Colab and Streamlit.")
         return None
 
 models = load_models()
@@ -99,22 +96,32 @@ def calculate_features(input_df, nlp_score):
     # 4. Risk Alarm
     df['risk_alarm'] = np.where((df['is_backlog'] == 1) & (df['attendance_pct'] < 75), 1, 0)
     
-    # Ensure column order matches training exactly
-    # THIS ORDER MUST MATCH YOUR X_train.columns list from Colab
+    # === CRITICAL: ENFORCE EXACT COLUMN ORDER FROM ERROR LOG ===
     expected_cols = [
-        'previous_sem_gpa', 'attendance_pct', 'avg_daily_study_hours',
-        'social_media_hours_per_day', 'sleep_hours_avg', 'last_test_score',
-        'is_backlog', 'nlp_stress_score', 'academic_index', 'sleep_deviation',
-        'focus_ratio', 'risk_alarm'
+        'attendance_pct', 
+        'sleep_hours_avg', 
+        'avg_daily_study_hours', 
+        'avg_weekly_library_hours',  # <-- Added
+        'previous_sem_gpa', 
+        'last_test_score', 
+        'social_media_hours_per_day', 
+        'extracurricular_engagement_score', # <-- Added
+        'is_exam_week', # <-- Added
+        'nlp_stress_score', 
+        'is_backlog', 
+        'sleep_deviation', 
+        'academic_index', 
+        'focus_ratio', 
+        'risk_alarm'
     ]
     
-    # Reorder columns to match model expectation
+    # Reorder columns to match model expectation exactly
     return df[expected_cols]
 
 def generate_4_week_plan(risk_drivers, name):
     plan = f"### 🗓️ 4-Week Intervention Protocol for {name}\n\n"
     
-    # WEEK 1: STABILIZATION
+    # WEEK 1
     plan += "**WEEK 1: BIOLOGICAL STABILIZATION**\n"
     if 'Sleep' in risk_drivers:
         plan += "- 🌑 **Protocol:** 'The 10-3-2-1 Rule'. No caffeine 10hrs before bed, no food 3hrs before, no work 2hrs before, no screens 1hr before.\n"
@@ -125,7 +132,7 @@ def generate_4_week_plan(risk_drivers, name):
     else:
         plan += "- 🧠 **Mental:** Light review of daily notes (15 mins).\n\n"
 
-    # WEEK 2: ACADEMIC TRIAGE
+    # WEEK 2
     plan += "**WEEK 2: ACADEMIC TRIAGE**\n"
     if 'Backlogs/Attendance' in risk_drivers:
         plan += "- 🚨 **CRITICAL:** Meet with faculty regarding attendance. You are in the 'Danger Zone'.\n"
@@ -135,7 +142,7 @@ def generate_4_week_plan(risk_drivers, name):
     else:
         plan += "- 🚀 **Action:** Start advanced revision for upcoming tests.\n\n"
 
-    # WEEK 3: OPTIMIZATION
+    # WEEK 3
     plan += "**WEEK 3: DOPAMINE DETOX**\n"
     if 'Focus' in risk_drivers:
         plan += "- 📱 **Restriction:** Social Media limit hard-capped at 30 mins/day. Delete apps if necessary.\n"
@@ -143,7 +150,7 @@ def generate_4_week_plan(risk_drivers, name):
     else:
         plan += "- ✨ **Technique:** Teach a concept to a friend (Feynman Technique).\n\n"
 
-    # WEEK 4: MAINTENANCE
+    # WEEK 4
     plan += "**WEEK 4: PERFORMANCE PEAK**\n"
     plan += "- 🏁 **Goal:** Take one full mock test in exam conditions.\n"
     plan += "- 🔄 **Review:** Analyze errors from the mock test. Do not start new topics.\n"
@@ -167,6 +174,11 @@ with st.sidebar:
         backlog = st.selectbox("Do you have Backlogs?", ["No", "Yes"])
         attendance = st.slider("Attendance %", 0, 100, 80)
         
+        st.subheader("🏫 Campus Life")
+        library_hrs = st.slider("Weekly Library Hours", 0, 20, 5) # NEW
+        extra_score = st.slider("Extracurricular Score (0-10)", 0, 10, 5) # NEW
+        exam_week = st.selectbox("Is it Exam Week?", ["No", "Yes"]) # NEW
+
         st.subheader("🕰️ Habits & Health")
         study_hrs = st.slider("Daily Study (Hours)", 0.0, 12.0, 2.0)
         social_hrs = st.slider("Social Media (Hours)", 0.0, 12.0, 3.0)
@@ -192,7 +204,7 @@ if submit:
             vec_text = models['nlp_vectorizer'].transform([cleaned_diary])
             nlp_prob = models['nlp_model'].predict_proba(vec_text)[0][1]
             
-            # 2. Prepare Raw DataFrame
+            # 2. Prepare Raw DataFrame (NOW WITH ALL 15 COLS)
             raw_data = pd.DataFrame({
                 'previous_sem_gpa': [gpa],
                 'attendance_pct': [attendance],
@@ -200,7 +212,11 @@ if submit:
                 'social_media_hours_per_day': [social_hrs],
                 'sleep_hours_avg': [sleep_hrs],
                 'last_test_score': [test_score],
-                'is_backlog': [1 if backlog == "Yes" else 0]
+                'is_backlog': [1 if backlog == "Yes" else 0],
+                # ADDING MISSING COLUMNS
+                'avg_weekly_library_hours': [library_hrs],
+                'extracurricular_engagement_score': [extra_score],
+                'is_exam_week': [1 if exam_week == "Yes" else 0]
             })
             
             # 3. Feature Engineering
@@ -305,7 +321,7 @@ if submit:
             )
         except Exception as e:
             st.error(f"❌ PREDICTION ERROR: {e}")
-            st.info("There was an issue processing the data. Check if your inputs match the training data range.")
+            st.info("Double check input data.")
 
 else:
     if models is not None:
